@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="modelo_sqlite.sql" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="419"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title=".Browsables" custom_title="0" dock_id="1" table="0,10:Browsables"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011800ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">-- Script de creación de Base de Datos (SQLite)
+-- Archivo generado para persistencia del Sistema de Información de Equipamientos
+
+PRAGMA foreign_keys = ON;
+
+-- 1. Catálogo de Localidades
+CREATE TABLE CAT_LOCALIDAD (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    estado TEXT CHECK(estado IN ('Activo', 'Inactivo')) DEFAULT 'Activo'
+);
+
+-- 2. Catálogo de Centros de Desarrollo Comunitario (CDC)
+CREATE TABLE CAT_CDC (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    localidad_id INTEGER NOT NULL,
+    nombre TEXT NOT NULL,
+    estado TEXT CHECK(estado IN ('Activo', 'Inactivo')) DEFAULT 'Activo',
+    FOREIGN KEY (localidad_id) REFERENCES CAT_LOCALIDAD(id) ON DELETE RESTRICT
+);
+
+-- 3. Catálogo de Equipamientos (Soporta Equipamientos Padre/Estructura Jerárquica)
+CREATE TABLE CAT_EQUIPAMIENTO (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cdc_id INTEGER NOT NULL,
+    tipo TEXT NOT NULL, -- Aula, Auditorio, Piscina, etc.
+    codigo_enumerado TEXT NOT NULL, -- Código único físico
+    ocupacion_servicio TEXT, -- Servicio o entidad que lo ocupa
+    ocupacion_subdireccion TEXT, -- Subdirección técnica encargada
+    uso_equipamiento TEXT,
+    estado TEXT CHECK(estado IN ('Activo', 'Inactivo', 'Cerrado Temporalmente')) DEFAULT 'Activo',
+    motivo_cierre TEXT,
+    capacidad INTEGER NOT NULL CHECK(capacidad &gt; 0),
+    observaciones TEXT,
+    fecha_vigencia DATE,
+    equipamiento_padre_id INTEGER,
+    FOREIGN KEY (cdc_id) REFERENCES CAT_CDC(id) ON DELETE RESTRICT,
+    FOREIGN KEY (equipamiento_padre_id) REFERENCES CAT_EQUIPAMIENTO(id) ON DELETE SET NULL
+);
+
+-- 4. Horarios y Disponibilidades por Equipamiento
+CREATE TABLE CAT_HORARIO (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    equipamiento_id INTEGER NOT NULL,
+    dia_semana TEXT CHECK(dia_semana IN ('Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo')),
+    disponibilidad TEXT CHECK(disponibilidad IN ('Disponible', 'No Disponible')) DEFAULT 'Disponible',
+    hora_apertura TEXT NOT NULL, -- Formato 'HH:MM'
+    hora_cierre TEXT NOT NULL,   -- Formato 'HH:MM'
+    vigencia DATE,
+    FOREIGN KEY (equipamiento_id) REFERENCES CAT_EQUIPAMIENTO(id) ON DELETE CASCADE
+);
+
+-- 5. Tabla de Cursos (Nivel 1 General)
+CREATE TABLE TBL_CURSO (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    componente_servicio TEXT NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    asistentes_estimados INTEGER CHECK(asistentes_estimados &gt;= 0)
+);
+
+-- 6. Tabla de Sesiones Operativas (Nivel 2 Detalle)
+CREATE TABLE TBL_SESION (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    curso_id INTEGER NOT NULL,
+    equipamiento_id INTEGER NOT NULL,
+    fecha_sesion DATE NOT NULL,
+    dia_semana TEXT,
+    hora_inicio TEXT NOT NULL,
+    hora_fin TEXT NOT NULL,
+    asistentes_reales INTEGER CHECK(asistentes_reales &gt;= 0),
+    estado_sesion TEXT CHECK(estado_sesion IN ('Programada', 'Realizada', 'Cancelada')) DEFAULT 'Programada',
+    motivo TEXT,
+    observaciones TEXT,
+    FOREIGN KEY (curso_id) REFERENCES TBL_CURSO(id) ON DELETE CASCADE,
+    FOREIGN KEY (equipamiento_id) REFERENCES CAT_EQUIPAMIENTO(id) ON DELETE RESTRICT
+);
+
+-- 7. Tabla de Auditoría Transaccional para Control de Cambios y Permisos de Roles
+CREATE TABLE TBL_AUDITORIA (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario TEXT NOT NULL,
+    tabla_afectada TEXT NOT NULL,
+    registro_id INTEGER NOT NULL,
+    campo TEXT NOT NULL,
+    valor_anterior TEXT,
+    valor_nuevo TEXT,
+    fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
