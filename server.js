@@ -4,9 +4,16 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+});
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://sistemasequipamientos.netlify.app', 'http://localhost:4200'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'x-user-rol']
+}));
 app.use(express.json());
 
 // Conexión e Inicialización Automática de SQLite
